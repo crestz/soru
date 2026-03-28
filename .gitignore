@@ -1,0 +1,47 @@
+# Build directories
+/build/
+/out/
+/dist/
+/cmake-build-*/
+
+# CMake generated files
+/CMakeCache.txt
+/CMakeFiles/
+/CTestTestfile.cmake
+/Testing/
+/cmake_install.cmake
+/install_manifest.txt
+/compile_commands.json
+/build.ninja
+/.ninja_deps
+/.ninja_log
+Makefile
+
+# vcpkg artifacts
+/vcpkg_installed/
+
+# Object files and libraries
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# Executables and bundles
+*.exe
+*.out
+*.app
+
+# IDEs and editors
+/.idea/
+/.vscode/*
+!/.vscode/settings.json
+!/.vscode/extensions.json
+/CMakeUserPresets.json
+
+# OS files
+.DS_Store
