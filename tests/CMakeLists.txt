@@ -1,11 +1,6 @@
 find_package(GTest CONFIG REQUIRED)
 include(GoogleTest)
 
-add_executable(soru_intrusive_list_tests IntrusiveListTests.cxx)
-target_link_libraries(
-  soru_intrusive_list_tests
-  PRIVATE
-    Soru::Soru
-    GTest::gtest_main)
-
-gtest_discover_tests(soru_intrusive_list_tests)
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/intrusive_list/CMakeLists.txt")
+  add_subdirectory(intrusive_list)
+endif()

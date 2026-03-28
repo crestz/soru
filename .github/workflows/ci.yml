@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Check source formatting
+        run: |
+          clang-format --version
+          mapfile -t cpp_files < <(git ls-files -- \
+            '*.h' '*.hh' '*.hpp' '*.hxx' \
+            '*.c' '*.cc' '*.cpp' '*.cxx' \
+            '*.ipp' '*.tpp' '*.ixx')
+
+          if [ "${#cpp_files[@]}" -eq 0 ]; then
+            echo "No C/C++ files to format-check."
+            exit 0
+          fi
+
+          clang-format --dry-run -Werror "${cpp_files[@]}"
+
+  build-and-test:
+    name: Build and Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/.vcpkg
+      VCPKG_TOOL_COMMIT: c941d5e450738629213a60ab8911fd26efca7c6e
+      CMAKE_BUILD_DIR: ${{ github.workspace }}/build/ci
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Bootstrap vcpkg
+        run: |
+          git init "$VCPKG_ROOT"
+          git -C "$VCPKG_ROOT" remote add origin https://github.com/microsoft/vcpkg.git
+          git -C "$VCPKG_ROOT" fetch --depth 1 origin "$VCPKG_TOOL_COMMIT"
+          git -C "$VCPKG_ROOT" checkout --detach FETCH_HEAD
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+
+      - name: Configure
+        run: |
+          cmake -S . -B "$CMAKE_BUILD_DIR" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DSORU_BUILD_TESTS=ON \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build "$CMAKE_BUILD_DIR" --parallel
+
+      - name: Test
+        run: ctest --test-dir "$CMAKE_BUILD_DIR" --output-on-failure
