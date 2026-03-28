@@ -22,25 +22,12 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
-
       - name: Check source formatting
-        run: |
-          clang-format --version
-          mapfile -t cpp_files < <(git ls-files -- \
-            '*.h' '*.hh' '*.hpp' '*.hxx' \
-            '*.c' '*.cc' '*.cpp' '*.cxx' \
-            '*.ipp' '*.tpp' '*.ixx')
-
-          if [ "${#cpp_files[@]}" -eq 0 ]; then
-            echo "No C/C++ files to format-check."
-            exit 0
-          fi
-
-          clang-format --dry-run -Werror "${cpp_files[@]}"
+        uses: jidicula/clang-format-action@v4.18.0
+        with:
+          clang-format-version: "21"
+          check-path: "."
+          include-regex: '.*\.(h|hh|hpp|hxx|c|cc|cpp|cxx|ipp|tpp|ixx)$'
 
   build-and-test:
     name: Build and Test (${{ matrix.os }})
